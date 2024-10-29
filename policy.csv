@@ -1,0 +1,4 @@
+DFW Tab,POLICY NAME,RULE NAME,ID,Sources,Destinations,Services,Context Profiles,Applied To,Action,Logging,Comments 
+Infrastructure,Allow NTP,Allow NTP rule,4098,"172.16.10.10, 172.16.10.11, 172.16.10.12, 172.20.20.10, Application-X_Web_Group, Non-Prod Apps, Prod_apps, Ubuntu jump server, wordpress_app, wordpress_db_tier","ANY","NTP","ANY","Non-Prod Apps, Prod_apps",ALLOW,True,Rule to allow NTP
+	  
+
