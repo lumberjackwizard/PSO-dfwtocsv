@@ -1,5 +1,11 @@
 # Developed on Powershell 7.4.5 
 
+# Temporarily hard setting nsxmgr and credentials for development. Get-Credential will be used in the future. 
+
+$nsxmgr = '172.16.10.11'
+$nsxuser = 'admin'
+$nsxpasswd = ConvertTo-SecureString -String 'VMware1!VMware1!' -AsPlainText -Force
+$Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxuser, $nsxpasswd
 
 
 $nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
@@ -11,8 +17,9 @@ $Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group
 
 function Get-UserInput(){
 	$userinput = Read-Host "Enter Security Policy Name"
-	return $userinput
+	return $userinput.Trim()
 }
+
 
 function Get-NSXDFW($Uri){
 
@@ -49,7 +56,7 @@ function Get-NSXDFW($Uri){
     $newfilteredrules = "DFW Tab,POLICY NAME,RULE NAME,ID,Sources,Destinations,Services,Context Profiles,Applied To,Action,Logging,Comments `n"
 
 	foreach ($secpolicy in $secpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
-		if ($secpolicy.display_name -like "*$userinput*"){
+		if ($secpolicy.display_name -like "*`"$userinput`"*"){
 			Write-Host "Matching Security Policy: "$secpolicy.display_name
 			$sortrules = $secpolicy.children.Rule | Sort-Object -Property sequence_number
 		
