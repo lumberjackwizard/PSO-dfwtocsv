@@ -8,8 +8,8 @@ $nsxpasswd = ConvertTo-SecureString -String 'VMware1!VMware1!' -AsPlainText -For
 $Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxuser, $nsxpasswd
 
 
-$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
-$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
+#$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
+#$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
 
 # Uri will get only securitypolices, groups, context profiles and services under infra
 
