@@ -231,11 +231,6 @@ function Get-Target-Policy(){
 	
 }
 
-# function Get-Target-Policy($secpolicies,$allgroups,$allservices,$allcontextprofiles,$userinput){
-# 	foreach ($secpolicy in $secpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
-# 		#Write-Host $secpolicy.display_name
-# 	}
-# }
 
 function New-OutputNSXCSV {
 
