@@ -72,9 +72,10 @@ function Get-Target-Policy(){
     	$newfilteredrules = "DFW Tab,POLICY NAME,RULE NAME,ID,Sources,Destinations,Services,Context Profiles,Applied To,Action,Logging,Comments `n"
 	}
 
+	$policyMatch = 0
 	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
-		#Write-Host "secpolicy display name is" $secpolicy.display_name
 		if ($secpolicy.display_name -like "*$userinput*"){
+			$policyMatch = 1
 			Write-Host "Matching Security Policy: "$secpolicy.display_name
 			$sortrules = $secpolicy.children.Rule | Sort-Object -Property sequence_number
 		
@@ -220,6 +221,10 @@ function Get-Target-Policy(){
 		
 		} 
 	}	
+	if ($policyMatch -eq 0){
+		Write-Host "No match for: " $userinput
+		Write-Host "Please Try again (or use Ctrl-C to end session)"
+	}
 	
 	#Finishing out the function by taking the complete $newfilteredrules variable (containing all rules in CSV format)
 	# and returning the result. 
@@ -237,7 +242,25 @@ function New-OutputNSXCSV {
 
 }
 
+function Build-CSV(){
 
+	while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
+
+		#Prompt the user for the target Security Group
+		$userinput = Get-UserInput
+
+
+		$newfilteredrules = Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
+
+		# if ($newfilteredrules.EndsWith("Comments `n")) {
+		# 	write-host "No policy matches: $userinput"
+		# 	write-host "Please try again or break with Ctrl-C"
+		# 	write-host "`n"
+
+		# }
+	}
+	return $newfilteredrules
+}
 
 # Main 
 
@@ -278,26 +301,20 @@ while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' 
 	}
 }
 
-function Build-CSV(){
-
-	while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
-
-		#Prompt the user for the target Security Group
-		$userinput = Get-UserInput
-
-
-		$newfilteredrules = Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
-
-		if ($newfilteredrules.EndsWith("Comments `n")) {
-			write-host "No policy matches: $userinput"
-			write-host "Please try again or break with Ctrl-C"
-			write-host "`n"
-
-		}
-	}
-	return $newfilteredrules
-}
-
 $newfilteredrules = Build-CSV
+
+while ($additionalPolicies -ne 'Y' -and $additionalPolicies -ne 'y' -and $additionalPolicies -ne 'N' -and $additionalPolicies -ne 'n') {
+
+	$additionalPolicies = Read-Host "Would you like to add additional Security Policies to the csv file? <Y/N>"
+
+	if ($additionalPolicies -eq "y" -or $additionalPolicies -eq "Y"){
+		$newfilteredrules += Build-CSV
+		
+	} elseif ($displayList -eq "n" -or $displayList -eq "N"){
+		Write-Host "`n"
+	} else {
+		Write-Host "Invalid input, please enter Y or N."
+	}
+}
 
 New-OutputNSXCSV
