@@ -59,7 +59,7 @@ function Get-NSXDFW($Uri){
     }
 }
 
-#function Get-Target-Policy($secpolicies,$allgroups,$allservices,$allcontextprofiles,$userinput){
+
 function Get-Target-Policy(){
 	param (
 		[PSCustomObject]$allsecpolicies,
@@ -262,7 +262,28 @@ $allsecgroups = $allpolicies.AllGroups
 $allsecservices = $allpolicies.AllServices
 $allseccontextprofiles = $allpolicies.AllContextProfiles
 
+#Prompt user to see if they want a full list of existing Security Policies
+
+while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' -and $displayList -ne 'n') {
+
+	$displayList = Read-Host "Would you like to first display a list of all Security Policy Names? <Y/N>"
+
+	if ($displayList -eq "y" -or $displayList -eq "Y"){
+
+		foreach ($secpolicyname in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
+			Write-Host $secpolicyname.display_name
+		}
+		Write-Host "`n"
+	} elseif ($displayList -eq "n" -or $displayList -eq "N"){
+		
+	} else {
+		Write-Host "Invalid input, please enter Y or N."
+	}
+}
+
+#Prompt the user for the target Security Group
 $userinput = Get-UserInput
+
 
 $newfilteredrules = Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
 
