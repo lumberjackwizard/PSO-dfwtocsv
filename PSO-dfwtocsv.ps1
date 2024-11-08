@@ -255,6 +255,8 @@ function New-OutputNSXCSV {
 # 	Write-Host 
 # } 
 
+#$newfilteredrules = ""
+
 $allpolicies = Get-NSXDFW($Uri)
 
 $allsecpolicies = $allpolicies.SecPolicies
@@ -281,22 +283,20 @@ while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' 
 	}
 }
 
-#Prompt the user for the target Security Group
-$userinput = Get-UserInput
+while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
 
-
-$newfilteredrules = Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
-
-if ($newfilteredrules.EndsWith("Comments `n")) {
-	write-host "No policy matches: $userinput"
-	write-host "Please try again or break with Ctrl-C"
-	write-host "`n"
+	#Prompt the user for the target Security Group
 	$userinput = Get-UserInput
 
-	
 
-	$newfilteredrules = Get-NSXDFW($Uri)
+	$newfilteredrules = Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
 
+	if ($newfilteredrules.EndsWith("Comments `n")) {
+		write-host "No policy matches: $userinput"
+		write-host "Please try again or break with Ctrl-C"
+		write-host "`n"
+
+	}
 }
 
 New-OutputNSXCSV
