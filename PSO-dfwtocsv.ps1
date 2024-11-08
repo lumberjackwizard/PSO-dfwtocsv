@@ -11,9 +11,7 @@ $Cred = New-Object -TypeName System.Management.Automation.PSCredential -Argument
 #$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
 #$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
 
-# Uri will get only securitypolices, groups, context profiles and services under infra
 
-$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;Service'
 
 function Get-UserInput(){
 	$userinput = Read-Host "Enter Security Policy Name"
@@ -70,9 +68,9 @@ function Get-Target-Policy(){
 	)
 
 	#Below checks for a match of the user entered policy name via an if statement. 
-
-    $newfilteredrules = "DFW Tab,POLICY NAME,RULE NAME,ID,Sources,Destinations,Services,Context Profiles,Applied To,Action,Logging,Comments `n"
-
+	if (-not $newfilteredrules){
+    	$newfilteredrules = "DFW Tab,POLICY NAME,RULE NAME,ID,Sources,Destinations,Services,Context Profiles,Applied To,Action,Logging,Comments `n"
+	}
 
 	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
 		#Write-Host "secpolicy display name is" $secpolicy.display_name
@@ -249,13 +247,10 @@ function New-OutputNSXCSV {
 # If there's no match, diagnostic data is presented to the user, and the Get-UserInput and Get-NSXDFW functions are ran again.
 # Finally, the New-OutputNSXCSV function outputs the data into the policy.csv file
 
-# $displayList = Read-Host "Would you like to display a list of all Security Policy Names? <Y/N>"
 
-# if ($displayList -like "y"){
-# 	Write-Host 
-# } 
+# Uri will get only securitypolices, groups, context profiles and services under infra
 
-#$newfilteredrules = ""
+$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;Service'
 
 $allpolicies = Get-NSXDFW($Uri)
 
@@ -283,20 +278,26 @@ while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' 
 	}
 }
 
-while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
+function Build-CSV(){
 
-	#Prompt the user for the target Security Group
-	$userinput = Get-UserInput
+	while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
+
+		#Prompt the user for the target Security Group
+		$userinput = Get-UserInput
 
 
-	$newfilteredrules = Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
+		$newfilteredrules = Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
 
-	if ($newfilteredrules.EndsWith("Comments `n")) {
-		write-host "No policy matches: $userinput"
-		write-host "Please try again or break with Ctrl-C"
-		write-host "`n"
+		if ($newfilteredrules.EndsWith("Comments `n")) {
+			write-host "No policy matches: $userinput"
+			write-host "Please try again or break with Ctrl-C"
+			write-host "`n"
 
+		}
 	}
+	return $newfilteredrules
 }
+
+$newfilteredrules = Build-CSV
 
 New-OutputNSXCSV
