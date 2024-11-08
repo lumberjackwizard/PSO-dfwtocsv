@@ -18,6 +18,7 @@ $Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group
 function Get-UserInput(){
 	$userinput = Read-Host "Enter Security Policy Name"
 	return $userinput.Trim()
+
 }
 
 
@@ -49,14 +50,33 @@ function Get-NSXDFW($Uri){
 	# Gathering Context Profiles
 
 	$allcontextprofiles = $rawpolicy.children.PolicyContextProfile | Where-object {$_.id}
-	
-	#Gathering all rules and polices
+
+	return [pscustomobject]@{
+        SecPolicies =        $secpolicies
+		AllGroups   =        $allgroups
+		AllServices =        $allservices
+		AllContextProfiles = $allcontextprofiles
+    }
+}
+
+#function Get-Target-Policy($secpolicies,$allgroups,$allservices,$allcontextprofiles,$userinput){
+function Get-Target-Policy(){
+	param (
+		[PSCustomObject]$allsecpolicies,
+		[PSCustomObject]$allsecgroups,
+		[PSCustomObject]$allsecservices,
+		[PSCustomObject]$allseccontextprofiles,
+		[string]$userinput
+	)
+
 	#Below checks for a match of the user entered policy name via an if statement. 
 
     $newfilteredrules = "DFW Tab,POLICY NAME,RULE NAME,ID,Sources,Destinations,Services,Context Profiles,Applied To,Action,Logging,Comments `n"
 
-	foreach ($secpolicy in $secpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
-		if ($secpolicy.display_name -like "*`"$userinput`"*"){
+
+	foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
+		#Write-Host "secpolicy display name is" $secpolicy.display_name
+		if ($secpolicy.display_name -like "*$userinput*"){
 			Write-Host "Matching Security Policy: "$secpolicy.display_name
 			$sortrules = $secpolicy.children.Rule | Sort-Object -Property sequence_number
 		
@@ -86,7 +106,7 @@ function Get-NSXDFW($Uri){
 
 				foreach ($srcgroup in $rule.source_groups){
 					$n = 0
-					foreach ($filteredgroup in $allgroups){
+					foreach ($filteredgroup in $allsecgroups){
 						if ($filteredgroup.path -eq $srcgroup){
 							$initruleentrysrc += $filteredgroup.display_name 
 							$n = 1
@@ -105,7 +125,7 @@ function Get-NSXDFW($Uri){
 				
 				foreach ($dstgroup in $rule.destination_groups){  
 					$n = 0
-					foreach ($filteredgroup in $allgroups){
+					foreach ($filteredgroup in $allsecgroups){
 						if ($filteredgroup.path -eq $dstgroup){
 							$initruleentrydst += $filteredgroup.display_name #+ ","
 							$n = 1
@@ -124,7 +144,7 @@ function Get-NSXDFW($Uri){
 
 				foreach ($svcgroup in $rule.services){ 
 					$n = 0
-					foreach ($filsvc in $allservices){
+					foreach ($filsvc in $allsecservices){
 						if ($filsvc.path -eq $svcgroup){
 							$initruleentrysvc += $filsvc.display_name 
 							$n = 1
@@ -143,7 +163,7 @@ function Get-NSXDFW($Uri){
 
 				foreach ($cxtprogroup in $rule.profiles){  
 					$n = 0
-					foreach ($filctxpro in $allcontextprofiles){
+					foreach ($filctxpro in $allseccontextprofiles){
 						if ($filctxpro.path -eq $cxtprogroup){
 							$initruleentrycxtpro += $filctxpro.display_name 
 							$n = 1
@@ -203,9 +223,6 @@ function Get-NSXDFW($Uri){
 		} 
 	}	
 	
-	
-
-	
 	#Finishing out the function by taking the complete $newfilteredrules variable (containing all rules in CSV format)
 	# and returning the result. 
 
@@ -213,6 +230,12 @@ function Get-NSXDFW($Uri){
 	
 	
 }
+
+# function Get-Target-Policy($secpolicies,$allgroups,$allservices,$allcontextprofiles,$userinput){
+# 	foreach ($secpolicy in $secpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
+# 		#Write-Host $secpolicy.display_name
+# 	}
+# }
 
 function New-OutputNSXCSV {
 
@@ -231,14 +254,31 @@ function New-OutputNSXCSV {
 # If there's no match, diagnostic data is presented to the user, and the Get-UserInput and Get-NSXDFW functions are ran again.
 # Finally, the New-OutputNSXCSV function outputs the data into the policy.csv file
 
+# $displayList = Read-Host "Would you like to display a list of all Security Policy Names? <Y/N>"
+
+# if ($displayList -like "y"){
+# 	Write-Host 
+# } 
+
+$allpolicies = Get-NSXDFW($Uri)
+
+$allsecpolicies = $allpolicies.SecPolicies
+$allsecgroups = $allpolicies.AllGroups
+$allsecservices = $allpolicies.AllServices
+$allseccontextprofiles = $allpolicies.AllContextProfiles
+
 $userinput = Get-UserInput
-$newfilteredrules = Get-NSXDFW($Uri)
+
+$newfilteredrules = Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
 
 if ($newfilteredrules.EndsWith("Comments `n")) {
 	write-host "No policy matches: $userinput"
 	write-host "Please try again or break with Ctrl-C"
 	write-host "`n"
 	$userinput = Get-UserInput
+
+	
+
 	$newfilteredrules = Get-NSXDFW($Uri)
 
 }
