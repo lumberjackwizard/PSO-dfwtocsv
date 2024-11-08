@@ -275,7 +275,7 @@ while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' 
 		}
 		Write-Host "`n"
 	} elseif ($displayList -eq "n" -or $displayList -eq "N"){
-		
+		Write-Host "`n"
 	} else {
 		Write-Host "Invalid input, please enter Y or N."
 	}
