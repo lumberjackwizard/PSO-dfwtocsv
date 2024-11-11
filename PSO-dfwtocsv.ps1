@@ -8,13 +8,44 @@ $nsxpasswd = ConvertTo-SecureString -String 'VMware1!VMware1!' -AsPlainText -For
 $Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxuser, $nsxpasswd
 
 
-#$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
-#$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
+# $nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
+# $Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
 
+
+function Check-NSX-Credentials(){
+	$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
+
+	#using Invoke-WebRequst to evaluate the statuscode that is returned from the NSX Manager
+	$response = Invoke-WebRequest -Uri $checkUri -Method Get -SkipCertificateCheck -Authentication Basic -Credential $Cred -SkipHttpErrorCheck
+	
+	if ($response.StatusCode -eq 200) {
+		Write-Host "Successfully connected to NSX Manager. Status: 200 OK"
+	} else {
+		Write-Host "Failed to connect to NSX Manager." 
+		Write-Host "Status: $($response.StatusCode)"
+		Write-Host "Error Message:" ($response.Content)
+		Write-Host "Exiting script... Please try again. "
+		exit
+	}
+
+}
 
 
 function Get-UserInput(){
-	$userinput = Read-Host "Enter Security Policy Name"
+	$userinput = Read-Host "Enter Security Policy Name (or hit the 'Enter' key to be prompted to quit)"
+	if ($userinput -eq ""){
+	 	$tryAgain = Read-Host "Nothing was entered. Do you want to try again? <Y/N>"
+		if ($tryAgain -eq "y" -or $tryAgain -eq "Y"){
+			continue
+		} elseif ($tryAgain -eq "n" -or $tryAgain -eq "N"){
+			New-OutputNSXCSV
+			exit
+		} else {
+			Write-Host "Invalid input, please enter Y or N."
+		}
+	}
+		
+	
 	return $userinput.Trim()
 
 }
@@ -223,7 +254,6 @@ function Get-Target-Policy(){
 	}	
 	if ($policyMatch -eq 0){
 		Write-Host "No match for: " $userinput
-		Write-Host "Please Try again (or use Ctrl-C to end session)"
 	}
 	
 	#Finishing out the function by taking the complete $newfilteredrules variable (containing all rules in CSV format)
@@ -236,28 +266,33 @@ function Get-Target-Policy(){
 
 
 function New-OutputNSXCSV {
-
-	Write-Host "Generating output file..."
-    $newfilteredrules | Out-File -FilePath .\policy.csv
+	if (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
+		Write-Host "No data gathered. No file will be created."
+		exit
+	} else {
+		Write-Host "Generating output file 'policy.csv'..."
+		$newfilteredrules | Out-File -FilePath .\policy.csv
+	}
 
 }
 
 function Build-CSV(){
 
-	while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
+	while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n") -or ($oldlinecount -eq $newlinecount)) ){
 
 		#Prompt the user for the target Security Group
 		$userinput = Get-UserInput
+		$oldlinecount = ($newfilteredrules -split "`n").Count
+		
 
+		$newfilteredrules += Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
 
-		$newfilteredrules = Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
+		
+		$selectedlinecount = ($newfilteredrules -split "`n").Count
+		
 
-		# if ($newfilteredrules.EndsWith("Comments `n")) {
-		# 	write-host "No policy matches: $userinput"
-		# 	write-host "Please try again or break with Ctrl-C"
-		# 	write-host "`n"
-
-		# }
+		$newlinecount = $selectedlinecount + $oldlinecount
+		
 	}
 	return $newfilteredrules
 }
@@ -274,6 +309,9 @@ function Build-CSV(){
 # Uri will get only securitypolices, groups, context profiles and services under infra
 
 $Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;Service'
+
+Check-NSX-Credentials
+
 
 $allpolicies = Get-NSXDFW($Uri)
 
@@ -303,12 +341,19 @@ while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' 
 
 $newfilteredrules = Build-CSV
 
+
+
+
 while ($additionalPolicies -ne 'Y' -and $additionalPolicies -ne 'y' -and $additionalPolicies -ne 'N' -and $additionalPolicies -ne 'n') {
 
 	$additionalPolicies = Read-Host "Would you like to add additional Security Policies to the csv file? <Y/N>"
 
 	if ($additionalPolicies -eq "y" -or $additionalPolicies -eq "Y"){
+		
 		$newfilteredrules += Build-CSV
+
+		$additionalPolicies = ""
+		
 		
 	} elseif ($displayList -eq "n" -or $displayList -eq "N"){
 		Write-Host "`n"
