@@ -349,7 +349,7 @@ while ($additionalPolicies -ne 'Y' -and $additionalPolicies -ne 'y' -and $additi
 		$additionalPolicies = ""
 		
 		
-	} elseif ($displayList -eq "n" -or $displayList -eq "N"){
+	} elseif ($additionalPolicies -eq "n" -or $additionalPolicies -eq "N"){
 		Write-Host "`n"
 	} else {
 		Write-Host "Invalid input, please enter Y or N."
