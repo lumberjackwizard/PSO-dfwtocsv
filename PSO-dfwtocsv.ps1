@@ -55,6 +55,7 @@ function Get-NSXDFW($Uri){
 	Write-Host "Requesting data from target NSX Manager..."
 
 	$rawpolicy = Invoke-RestMethod -Uri $Uri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
+	$rawSvcPolicy = Invoke-RestMethod -Uri $SvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
 	
 	
 	# Gathering security policies
@@ -71,7 +72,7 @@ function Get-NSXDFW($Uri){
 	
 	#Gathering Services
 
-	$allservices = $rawpolicy.children.Service | Where-object {$_.id}
+	$allservices = $rawSvcPolicy.children.Service | Where-object {$_.id}
 	
 	# Gathering Context Profiles
 
@@ -305,7 +306,8 @@ function Build-CSV(){
 
 # Uri will get only securitypolices, groups, context profiles and services under infra
 
-$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile;Service'
+$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile'
+$SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service'
 
 Check-NSX-Credentials
 
@@ -325,7 +327,7 @@ while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' 
 
 	if ($displayList -eq "y" -or $displayList -eq "Y"){
 
-		foreach ($secpolicyname in $allsecpolicies){ #| Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
+		foreach ($secpolicyname in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
 			Write-Host $secpolicyname.display_name
 		}
 		Write-Host "`n"
