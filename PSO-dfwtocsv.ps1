@@ -206,7 +206,7 @@ function Get-Target-Policy(){
 			
 				foreach ($appliedtogroup in $rule.scope){
 					$n = 0
-					foreach ($filteredgroup in $allgroups){
+					foreach ($filteredgroup in $allsecgroups){
 						if ($filteredgroup.path -eq $appliedtogroup){
 							$initruleentryappliedto += $filteredgroup.display_name 
 							$n = 1
