@@ -61,6 +61,9 @@ function Get-NSXDFW($Uri){
 	
 	$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy | Where-object {$_.id -And $_.id -ne 'Default'} | Sort-Object -Property sequence_number
 	
+	
+
+	Write-Host $secpolicies.count
 
 	# Gathering Groups
 
