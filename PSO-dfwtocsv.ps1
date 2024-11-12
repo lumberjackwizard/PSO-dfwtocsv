@@ -322,7 +322,7 @@ while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' 
 
 	if ($displayList -eq "y" -or $displayList -eq "Y"){
 
-		foreach ($secpolicyname in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
+		foreach ($secpolicyname in $allsecpolicies | #Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
 			Write-Host $secpolicyname.display_name
 		}
 		Write-Host "`n"
