@@ -63,7 +63,7 @@ function Get-NSXDFW($Uri){
 	
 	
 
-	Write-Host $secpolicies.count
+	
 
 	# Gathering Groups
 
