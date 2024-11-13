@@ -49,8 +49,11 @@ function Get-NSXDFW($Uri){
 
 
 	
-	# The below gathers all securitypolicies, groups, and services from infra, storing it in 
+	# The below gathers all securitypolicies, groups, and context profiles from infra, storing it in 
 	# the $rawpolicy variable 
+	# Services are captured in the rawSvcPolicy variable. I've experinced issues when grabbing everything (including services)
+	# directly into rawpolicy when using PowerShell 7.x on Windows. When using PowerShell 7.x on Ubuntu, everything works. 
+	# To that end, I opted for 2 API calls so everything will work properly regardless of OS. 
 
 	Write-Host "Requesting data from target NSX Manager..."
 
@@ -304,7 +307,8 @@ function Build-CSV(){
 # Finally, the New-OutputNSXCSV function outputs the data into the policy.csv file
 
 
-# Uri will get only securitypolices, groups, context profiles and services under infra
+# Uri will get only securitypolices, groups, context profiles under infra
+# SvcUri will get only services. 
 
 $Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile'
 $SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service'
