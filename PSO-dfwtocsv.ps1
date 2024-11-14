@@ -6,7 +6,7 @@ $nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
 $Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
 
 
-function Invoke-Check-NSX-Credentials(){
+function Invoke-CheckNSXCredentials(){
 	$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
 
 	#using Invoke-WebRequst to evaluate the statuscode that is returned from the NSX Manager
@@ -32,7 +32,7 @@ function Get-UserInput(){
 		if ($tryAgain -eq "y" -or $tryAgain -eq "Y"){
 			continue
 		} elseif ($tryAgain -eq "n" -or $tryAgain -eq "N"){
-			New-OutputNSXCSV
+			Invoke-OutputNSXCSV
 			exit
 		} else {
 			Write-Host "Invalid input, please enter Y or N."
@@ -90,7 +90,7 @@ function Get-NSXDFW($Uri){
 }
 
 
-function Get-Target-Policy(){
+function Get-TargetPolicy(){
 	param (
 		[PSCustomObject]$allsecpolicies,
 		[PSCustomObject]$allsecgroups,
@@ -266,7 +266,7 @@ function Get-Target-Policy(){
 }
 
 
-function New-OutputNSXCSV {
+function Invoke-OutputNSXCSV {
 	if (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
 		Write-Host "No data gathered. No file will be created."
 		exit
@@ -277,7 +277,7 @@ function New-OutputNSXCSV {
 
 }
 
-function Build-CSV(){
+function Invoke-BuildCSV(){
 
 	while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n") -or ($oldlinecount -eq $newlinecount)) ){
 
@@ -286,7 +286,7 @@ function Build-CSV(){
 		$oldlinecount = ($newfilteredrules -split "`n").Count
 		
 
-		$newfilteredrules += Get-Target-Policy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
+		$newfilteredrules += Get-TargetPolicy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
 
 		
 		$selectedlinecount = ($newfilteredrules -split "`n").Count
@@ -298,14 +298,14 @@ function Build-CSV(){
 	return $newfilteredrules
 }
 
-function Add-More-Policies(){
+function Invoke-AddAdditionalPolicies(){
 	while ($additionalPolicies -ne 'Y' -and $additionalPolicies -ne 'y' -and $additionalPolicies -ne 'N' -and $additionalPolicies -ne 'n') {
 
 		$additionalPolicies = Read-Host "Would you like to add additional Security Policies to the csv file? <Y/N>"
 	
 		if ($additionalPolicies -eq "y" -or $additionalPolicies -eq "Y"){
 			
-			$newfilteredrules += Build-CSV
+			$additionalRules += Invoke-BuildCSV
 	
 			$additionalPolicies = ""
 			
@@ -317,7 +317,7 @@ function Add-More-Policies(){
 		}
 	}
 
-	return $newfilteredrules
+	return $additionalRules
 }
 
 # Main 
@@ -326,7 +326,7 @@ function Add-More-Policies(){
 # $newfilteredrules is populated with the returned $newfilteredrules variable from the Get-NSXDFW function. The data 
 # gathered from Get-UserInput is used to find the specific policy. 
 # If there's no match, diagnostic data is presented to the user, and the Get-UserInput and Get-NSXDFW functions are ran again.
-# Finally, the New-OutputNSXCSV function outputs the data into the policy.csv file
+# Finally, the Invoke-OutputNSXCSV function outputs the data into the policy.csv file
 
 
 # Uri will get only securitypolices, groups, context profiles under infra
@@ -335,7 +335,7 @@ function Add-More-Policies(){
 $Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile'
 $SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service'
 
-Invoke-Check-NSX-Credentials
+Invoke-CheckNSXCredentials
 
 
 $allpolicies = Get-NSXDFW($Uri)
@@ -364,11 +364,11 @@ while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' 
 	}
 }
 
-$newfilteredrules = Build-CSV
+$newfilteredrules = Invoke-BuildCSV
 
-$newfilteredrules += Add-More-Policies
-
-
+$newfilteredrules += Invoke-AddAdditionalPolicies
 
 
-New-OutputNSXCSV
+
+
+Invoke-OutputNSXCSV
