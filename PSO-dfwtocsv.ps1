@@ -6,7 +6,7 @@ $nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
 $Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
 
 
-function Check-NSX-Credentials(){
+function Invoke-Check-NSX-Credentials(){
 	$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
 
 	#using Invoke-WebRequst to evaluate the statuscode that is returned from the NSX Manager
@@ -313,7 +313,7 @@ function Build-CSV(){
 $Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile'
 $SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service'
 
-Check-NSX-Credentials
+Invoke-Check-NSX-Credentials
 
 
 $allpolicies = Get-NSXDFW($Uri)
