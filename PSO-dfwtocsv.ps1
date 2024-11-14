@@ -298,6 +298,28 @@ function Build-CSV(){
 	return $newfilteredrules
 }
 
+function Add-More-Policies(){
+	while ($additionalPolicies -ne 'Y' -and $additionalPolicies -ne 'y' -and $additionalPolicies -ne 'N' -and $additionalPolicies -ne 'n') {
+
+		$additionalPolicies = Read-Host "Would you like to add additional Security Policies to the csv file? <Y/N>"
+	
+		if ($additionalPolicies -eq "y" -or $additionalPolicies -eq "Y"){
+			
+			$newfilteredrules += Build-CSV
+	
+			$additionalPolicies = ""
+			
+			
+		} elseif ($additionalPolicies -eq "n" -or $additionalPolicies -eq "N"){
+			Write-Host "`n"
+		} else {
+			Write-Host "Invalid input, please enter Y or N."
+		}
+	}
+
+	return $newfilteredrules
+}
+
 # Main 
 
 # Get-UserInput is used to prompt and gather the desired policy name
@@ -344,25 +366,9 @@ while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' 
 
 $newfilteredrules = Build-CSV
 
+$newfilteredrules += Add-More-Policies
 
 
 
-while ($additionalPolicies -ne 'Y' -and $additionalPolicies -ne 'y' -and $additionalPolicies -ne 'N' -and $additionalPolicies -ne 'n') {
-
-	$additionalPolicies = Read-Host "Would you like to add additional Security Policies to the csv file? <Y/N>"
-
-	if ($additionalPolicies -eq "y" -or $additionalPolicies -eq "Y"){
-		
-		$newfilteredrules += Build-CSV
-
-		$additionalPolicies = ""
-		
-		
-	} elseif ($additionalPolicies -eq "n" -or $additionalPolicies -eq "N"){
-		Write-Host "`n"
-	} else {
-		Write-Host "Invalid input, please enter Y or N."
-	}
-}
 
 New-OutputNSXCSV
