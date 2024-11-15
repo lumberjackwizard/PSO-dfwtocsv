@@ -267,12 +267,17 @@ function Get-TargetPolicy(){
 
 
 function Invoke-OutputNSXCSV {
+
+	param (
+		[string]$outputfile
+	)
+
 	if (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
 		Write-Host "No data gathered. No file will be created."
 		exit
 	} else {
 		Write-Host "Generating output file 'policy.csv'..."
-		$newfilteredrules | Out-File -FilePath .\policy.csv
+		$newfilteredrules | Out-File -FilePath .\$outputfile
 	}
 
 }
@@ -371,4 +376,4 @@ $newfilteredrules += Invoke-AddAdditionalPolicies
 
 
 
-Invoke-OutputNSXCSV
+Invoke-OutputNSXCSV -outputfile "output.csv"
