@@ -270,15 +270,15 @@ function Get-TargetPolicy(){
 function Invoke-OutputNSXCSV {
 
 	param (
-		[string]$outputfile
+		[string]$outputFile
 	)
 
 	if (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
 		Write-Host "No data gathered. No file will be created."
 		exit
 	} else {
-		Write-Host "Generating output file 'policy.csv'..."
-		$newfilteredrules | Out-File -FilePath .\$outputfile
+		Write-Host "Generating output file '$outputFile'..."
+		$newfilteredrules | Out-File -FilePath .\$outputFile
 	}
 
 }
@@ -338,7 +338,7 @@ function Invoke-AddAdditionalPolicies(){
 	return $additionalRules
 }
 
-function Show-Menu
+function Show-MainMenu
 {
      param (
            [string]$Title = ‘NSX DFW Security Policies to CSV’
@@ -381,7 +381,7 @@ $allseccontextprofiles = $allpolicies.AllContextProfiles
 # Generate Menu
 do
 {
-     Show-Menu
+     Show-MainMenu
      $input = Read-Host “Please make a selection”
      switch ($input)
      {
@@ -397,13 +397,19 @@ do
                   
 				$newfilteredrules = Invoke-BuildCSV
 				$newfilteredrules += Invoke-AddAdditionalPolicies
-				Invoke-OutputNSXCSV -outputfile "policy.csv"
+
+				$timestamp = (Get-Date -Format "yyyyMMdd_HHmmss")
+    			$outputFile = "policy_$timestamp.csv"
+				Invoke-OutputNSXCSV -outputFile $outputFile
 				'Done!'
            } ‘3’ {
 			
                 ‘Gathering all security policies and rules ...’
 				$newfilteredrules = Invoke-BuildCSV -getAllPolicies "1"
-				Invoke-OutputNSXCSV -outputfile "policy.csv"
+
+				$timestamp = (Get-Date -Format "yyyyMMdd_HHmmss")
+    			$outputFile = "policy_$timestamp.csv"
+				Invoke-OutputNSXCSV -outputFile $outputFile
 				'Done!'
            } ‘q’ {
                 return
