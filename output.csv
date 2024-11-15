@@ -1,4 +1,0 @@
-DFW Tab,POLICY NAME,RULE NAME,ID,Sources,Destinations,Services,Context Profiles,Applied To,Action,Logging,Comments 
-Infrastructure,Allow all SSH,Allow SSH rule,5116,"ANY","Prod_apps","SSH","ANY","ANY",ALLOW,False,
-	  
-
