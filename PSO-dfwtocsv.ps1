@@ -56,6 +56,7 @@ function Get-NSXDFW($Uri){
 	# To that end, I opted for 2 API calls so everything will work properly regardless of OS. 
 
 	Write-Host "Requesting data from target NSX Manager..."
+	Write-Host "`n"
 
 	$rawpolicy = Invoke-RestMethod -Uri $Uri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
 	$rawSvcPolicy = Invoke-RestMethod -Uri $SvcUri -SkipCertificateCheck -Authentication Basic -Credential $Cred 
@@ -284,10 +285,22 @@ function Invoke-OutputNSXCSV {
 
 function Invoke-BuildCSV(){
 
+	param(
+		[string] $getAllPolicies
+	)
+
 	while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n") -or ($oldlinecount -eq $newlinecount)) ){
 
 		#Prompt the user for the target Security Group
-		$userinput = Get-UserInput
+		if ($getAllPolicies -eq "1"){
+			$userinput = ""
+		} else {
+			$userinput = Get-UserInput
+		}
+
+		
+
+
 		$oldlinecount = ($newfilteredrules -split "`n").Count
 		
 
@@ -325,6 +338,21 @@ function Invoke-AddAdditionalPolicies(){
 	return $additionalRules
 }
 
+function Show-Menu
+{
+     param (
+           [string]$Title = ‘NSX DFW Security Policies to CSV’
+     )
+     
+	 Write-Host "`n"
+     Write-Host “================ $Title ================”
+     
+     Write-Host “1: Press ‘1’ to display a list of all existing Security Policies.”
+     Write-Host “2: Press ‘2’ to search for specific Security Policies and input them and their associated rules into a csv file.”
+	 Write-Host “3: Press ‘3’ to output all Security Policies and associated rules into a csv file.”
+     Write-Host “Q: Press ‘Q’ to quit.”
+}
+
 # Main 
 
 # Get-UserInput is used to prompt and gather the desired policy name
@@ -349,6 +377,44 @@ $allsecpolicies = $allpolicies.SecPolicies
 $allsecgroups = $allpolicies.AllGroups
 $allsecservices = $allpolicies.AllServices
 $allseccontextprofiles = $allpolicies.AllContextProfiles
+
+# Generate Menu
+do
+{
+     Show-Menu
+     $input = Read-Host “Please make a selection”
+     switch ($input)
+     {
+           ‘1’ {
+                
+                ‘Displaying a list of all Security Policies...’
+				''
+				foreach ($secpolicyname in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
+					Write-Host $secpolicyname.display_name
+				}
+				''
+           } ‘2’ {
+                  
+				$newfilteredrules = Invoke-BuildCSV
+				$newfilteredrules += Invoke-AddAdditionalPolicies
+				Invoke-OutputNSXCSV -outputfile "policy.csv"
+				'Done!'
+           } ‘3’ {
+			
+                ‘Gathering all security policies and rules ...’
+				$newfilteredrules = Invoke-BuildCSV -getAllPolicies "1"
+				Invoke-OutputNSXCSV -outputfile "policy.csv"
+				'Done!'
+           } ‘q’ {
+                return
+           }
+     }
+     pause
+}
+until ($input -eq ‘q’)
+
+
+
 
 #Prompt user to see if they want a full list of existing Security Policies
 
