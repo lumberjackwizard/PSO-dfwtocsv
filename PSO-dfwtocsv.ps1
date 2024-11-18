@@ -32,16 +32,14 @@ function Get-UserInput(){
 		if ($tryAgain -eq "y" -or $tryAgain -eq "Y"){
 			continue
 		} elseif ($tryAgain -eq "n" -or $tryAgain -eq "N"){
-			Invoke-OutputNSXCSV
+			Invoke-CreateMenu
 			exit
 		} else {
 			Write-Host "Invalid input, please enter Y or N."
 		}
-	}
-		
+	}	
 	
 	return $userinput.Trim()
-
 }
 
 
@@ -256,6 +254,8 @@ function Get-TargetPolicy(){
 	}	
 	if ($policyMatch -eq 0){
 		Write-Host "No match for: " $userinput
+		Write-Host "Please try again"
+
 	}
 	
 	#Finishing out the function by taking the complete $newfilteredrules variable (containing all rules in CSV format)
@@ -353,6 +353,49 @@ function Show-MainMenu
      Write-Host “Q: Press ‘Q’ to quit.”
 }
 
+function Invoke-CreateMenu {
+	do
+	{
+		Show-MainMenu
+		$input = Read-Host “Please make a selection”
+		switch ($input)
+		{
+			‘1’ {
+					
+					‘Displaying a list of all Security Policies...’
+					''
+					foreach ($secpolicyname in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
+						Write-Host $secpolicyname.display_name
+					}
+					''
+			} ‘2’ {
+					
+					$newfilteredrules = Invoke-BuildCSV
+					$newfilteredrules += Invoke-AddAdditionalPolicies
+
+					$timestamp = (Get-Date -Format "yyyyMMdd_HHmmss")
+					$outputFile = "policy_$timestamp.csv"
+					Invoke-OutputNSXCSV -outputFile $outputFile
+					'Done!'
+			} ‘3’ {
+				
+					‘Gathering all security policies and rules ...’
+					$newfilteredrules = Invoke-BuildCSV -getAllPolicies "1"
+
+					$timestamp = (Get-Date -Format "yyyyMMdd_HHmmss")
+					$outputFile = "policy_$timestamp.csv"
+					Invoke-OutputNSXCSV -outputFile $outputFile
+					'Done!'
+			} ‘q’ {
+					return
+			}
+		}
+		pause
+	}
+	until ($input -eq ‘q’)
+
+}
+
 # Main 
 
 # Get-UserInput is used to prompt and gather the desired policy name
@@ -379,73 +422,8 @@ $allsecservices = $allpolicies.AllServices
 $allseccontextprofiles = $allpolicies.AllContextProfiles
 
 # Generate Menu
-do
-{
-     Show-MainMenu
-     $input = Read-Host “Please make a selection”
-     switch ($input)
-     {
-           ‘1’ {
-                
-                ‘Displaying a list of all Security Policies...’
-				''
-				foreach ($secpolicyname in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
-					Write-Host $secpolicyname.display_name
-				}
-				''
-           } ‘2’ {
-                  
-				$newfilteredrules = Invoke-BuildCSV
-				$newfilteredrules += Invoke-AddAdditionalPolicies
-
-				$timestamp = (Get-Date -Format "yyyyMMdd_HHmmss")
-    			$outputFile = "policy_$timestamp.csv"
-				Invoke-OutputNSXCSV -outputFile $outputFile
-				'Done!'
-           } ‘3’ {
-			
-                ‘Gathering all security policies and rules ...’
-				$newfilteredrules = Invoke-BuildCSV -getAllPolicies "1"
-
-				$timestamp = (Get-Date -Format "yyyyMMdd_HHmmss")
-    			$outputFile = "policy_$timestamp.csv"
-				Invoke-OutputNSXCSV -outputFile $outputFile
-				'Done!'
-           } ‘q’ {
-                return
-           }
-     }
-     pause
-}
-until ($input -eq ‘q’)
 
 
+Invoke-CreateMenu
 
 
-#Prompt user to see if they want a full list of existing Security Policies
-
-while ($displayList -ne 'Y' -and $displayList -ne 'y' -and $displayList -ne 'N' -and $displayList -ne 'n') {
-
-	$displayList = Read-Host "Would you like to first display a list of all Security Policy Names? <Y/N>"
-
-	if ($displayList -eq "y" -or $displayList -eq "Y"){
-
-		foreach ($secpolicyname in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
-			Write-Host $secpolicyname.display_name
-		}
-		Write-Host "`n"
-	} elseif ($displayList -eq "n" -or $displayList -eq "N"){
-		Write-Host "`n"
-	} else {
-		Write-Host "Invalid input, please enter Y or N."
-	}
-}
-
-$newfilteredrules = Invoke-BuildCSV
-
-$newfilteredrules += Invoke-AddAdditionalPolicies
-
-
-
-
-Invoke-OutputNSXCSV -outputfile "output.csv"
