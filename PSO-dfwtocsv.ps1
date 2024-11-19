@@ -298,7 +298,7 @@ function Invoke-BuildCSV(){
 		
 			if ($additionalPolicies -eq "y" -or $additionalPolicies -eq "Y"){
 				
-				$additionalRules += Invoke-AddCsvSection -newcsv $newcsv
+				$newcsv += Invoke-AddCsvSection -newcsv $newcsv
 		
 				$additionalPolicies = ""
 				
@@ -322,10 +322,10 @@ function Invoke-AddCsvSection(){
 	)
 
 	while (($oldlinecount -eq $newlinecount)){
-
 		#Prompt the user for the target Security Group
 		#if the getAllPolicies switch is used (Option 3 in the menu), the "" that is returned for $userinput
 		#will successfully match against all policies
+
 		if ($getAllPolicies -eq "1"){
 			$userinput = ""
 		} else {
@@ -404,7 +404,7 @@ function Invoke-CreateMenu {
 			} ‘2’ {
 					
 					$newfilteredrules = Invoke-BuildCSV
-					$newfilteredrules += Invoke-AddAdditionalPolicies
+					#$newfilteredrules += Invoke-AddAdditionalPolicies
 
 					$timestamp = (Get-Date -Format "yyyyMMdd_HHmmss")
 					$outputFile = "policy_$timestamp.csv"
