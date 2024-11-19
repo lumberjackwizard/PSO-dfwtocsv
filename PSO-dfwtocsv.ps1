@@ -29,19 +29,21 @@ function Get-UserInput(){
 	param(
 		[string] $additionalPolicies
 	)
-
-	$userinput = Read-Host "Enter Security Policy Name (or hit the 'Enter' key to be prompted to quit)"
-	if ($userinput -eq ""){
-	 	$tryAgain = Read-Host "Nothing was entered. Do you want to try again? <Y/N>"
-		if ($tryAgain -eq "y" -or $tryAgain -eq "Y"){
-			continue
-		} elseif ($tryAgain -eq "n" -or $tryAgain -eq "N"){
-			break
-		} else {
-			Write-Host "Invalid input, please enter Y or N."
-		}
-	}	
-	
+	$userinput = $null
+	while (-not $userinput -or $userinput -eq "" ){
+		$userinput = Read-Host "Enter Security Policy Name (or hit the 'Enter' key to be prompted to quit)"
+		if ($userinput -eq ""){
+			$tryAgain = Read-Host "Nothing was entered. Do you want to try again? <Y/N>"
+			if ($tryAgain -eq "y" -or $tryAgain -eq "Y"){
+				continue
+			} elseif ($tryAgain -eq "n" -or $tryAgain -eq "N"){
+				$userinput = $null
+				return $userinput
+			} else {
+				Write-Host "Invalid input, please enter Y or N."
+			}
+		}	
+	}
 	return $userinput.Trim()
 }
 
@@ -267,7 +269,7 @@ function Invoke-OutputNSXCSV {
 
 	if (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n"))){
 		Write-Host "No data gathered. No file will be created."
-		exit
+		continue
 	} else {
 		Write-Host "Generating output file '$outputFile'..."
 		$newfilteredrules | Out-File -FilePath .\$outputFile
@@ -332,6 +334,11 @@ function Invoke-AddCsvSection(){
 			$userinput = Get-UserInput
 		}
 
+		if (-not $userinput){
+			$newcsv2 = $null
+			return $newcsv2
+		}
+
 		$oldlinecount = ($newcsv -split "`n").Count
 
 		#Write-Host $oldlinecount
@@ -350,27 +357,7 @@ function Invoke-AddCsvSection(){
 	return $newcsv2
 }
 
-function Invoke-AddAdditionalPolicies(){
-	while ($additionalPolicies -ne 'Y' -and $additionalPolicies -ne 'y' -and $additionalPolicies -ne 'N' -and $additionalPolicies -ne 'n') {
 
-		$additionalPolicies = Read-Host "Would you like to add additional Security Policies to the csv file? <Y/N>"
-	
-		if ($additionalPolicies -eq "y" -or $additionalPolicies -eq "Y"){
-			
-			$additionalRules += Invoke-BuildCSV -additionalPolicies "1"
-	
-			$additionalPolicies = ""
-			
-			
-		} elseif ($additionalPolicies -eq "n" -or $additionalPolicies -eq "N"){
-			Write-Host "`n"
-		} else {
-			Write-Host "Invalid input, please enter Y or N."
-		}
-	}
-
-	return $additionalRules
-}
 
 function Show-MainMenu {
      param (
@@ -404,7 +391,6 @@ function Invoke-CreateMenu {
 			} ‘2’ {
 					
 					$newfilteredrules = Invoke-BuildCSV
-					#$newfilteredrules += Invoke-AddAdditionalPolicies
 
 					$timestamp = (Get-Date -Format "yyyyMMdd_HHmmss")
 					$outputFile = "policy_$timestamp.csv"
