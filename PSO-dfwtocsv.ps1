@@ -36,16 +36,7 @@ function Get-UserInput(){
 		if ($tryAgain -eq "y" -or $tryAgain -eq "Y"){
 			continue
 		} elseif ($tryAgain -eq "n" -or $tryAgain -eq "N"){
-			if ($additionalPolicies -eq 1) {
-				#needed a unique name that is unlikely to match a policy name
-				#this acts as a marker in case a user has selected to add additional policies 
-				#but opts during the process to choose hit 'Enter' to quit the policy name search
-				$userinput = "Pi is 3.1415"
-				return $userinput
-			} else {
-				Invoke-CreateMenu
-				exit
-			}
+			break
 		} else {
 			Write-Host "Invalid input, please enter Y or N."
 		}
@@ -75,10 +66,6 @@ function Get-NSXDFW(){
 	# Gathering security policies
 	
 	$secpolicies = $rawpolicy.children.Domain.children.SecurityPolicy | Where-object {$_.id -And $_.id -ne 'Default'} | Sort-Object -Property sequence_number
-	
-	
-
-	
 
 	# Gathering Groups
 
@@ -108,19 +95,7 @@ function Get-TargetPolicy(){
 		[PSCustomObject]$allsecservices,
 		[PSCustomObject]$allseccontextprofiles,
 		[string]$userinput
-	)
-	#this first if looks for the name that is automatically entered by the Get-UserInput function when they opt
-	#to give up on searching for an additional policy name. This simply returns a space to the function that has
-	#called the Get-TargetPolicy function. 
-	#Without the return of the space, an unusual phenomenon occurs where the first policy pulled (before the additional polices prompt)
-	#gets duplicated in the output file twice. 
-	if ($userinput -eq "Pi is 3.1415"){
-		return " "
-	} else {
-		#Below checks for a match of the user entered policy name via an if statement. 
-		if (-not $newfilteredrules){
-			$newfilteredrules = "DFW Tab,POLICY NAME,RULE NAME,ID,Sources,Destinations,Services,Context Profiles,Applied To,Action,Logging,Comments `n"
-		}
+	)	
 
 		$policyMatch = 0
 		foreach ($secpolicy in $allsecpolicies | Where-object {$_._create_user -ne 'system' -And $_._system_owned -eq $False}){
@@ -253,9 +228,7 @@ function Get-TargetPolicy(){
 					$ruleentrydst = "`"$ruleentrydst`""
 					$ruleentrysvc = "`"$ruleentrysvc`""
 					$ruleentrycxtpro = "`"$ruleentrycxtpro`""
-					$ruleentryappliedto = "`"$ruleentryappliedto`""
-
-				
+					$ruleentryappliedto = "`"$ruleentryappliedto`""		
 
 					#This is where we construct each line of the csv, ending with a newline
 					$rules = $rulecategory, $rulepolicyname, $ruleentryname, $ruleid, $ruleentrysrc, $ruleentrydst, $ruleentrysvc, $ruleentrycxtpro, $ruleentryappliedto, $ruleentryaction, $rulelogging, $rulecomments -join ","
@@ -281,7 +254,7 @@ function Get-TargetPolicy(){
 	# and returning the result. 
 
 		return $newmatchedrules
-	}
+	
 	
 }
 
@@ -309,40 +282,64 @@ function Invoke-BuildCSV(){
 		[string] $additionalPolicies
 	)
 
-	while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n") -or ($oldlinecount -eq $newlinecount)) ){
+	$newcsv = "DFW Tab,POLICY NAME,RULE NAME,ID,Sources,Destinations,Services,Context Profiles,Applied To,Action,Logging,Comments `n"
+
+	if ($getAllPolicies = "1"){
+		$newcsv += Invoke-AddCsvSection -newcsv $newcsv -getAllPolicies "1"
+	} else {
+		$newcsv += Invoke-AddCsvSection -newcsv $newcsv
+	}
+
+
+	while ($additionalPolicies -ne 'Y' -and $additionalPolicies -ne 'y' -and $additionalPolicies -ne 'N' -and $additionalPolicies -ne 'n') {
+
+		$additionalPolicies = Read-Host "Would you like to add additional Security Policies to the csv file? <Y/N>"
+	
+		if ($additionalPolicies -eq "y" -or $additionalPolicies -eq "Y"){
+			
+			$additionalRules += Invoke-AddCsvSection -newcsv $newcsv
+	
+			$additionalPolicies = ""
+			
+			
+		} elseif ($additionalPolicies -eq "n" -or $additionalPolicies -eq "N"){
+			Write-Host "`n"
+		} else {
+			Write-Host "Invalid input, please enter Y or N."
+		}
+	}
+
+	return $newcsv
+	
+}
+
+function Invoke-AddCsvSection(){
+	param ( 
+		[string] $newcsv,
+		[string] $getAllPolicies
+	)
+
+	while (($newcsv.EndsWith("Comments `n")) -or ($oldlinecount -eq $newlinecount) ){
 
 		#Prompt the user for the target Security Group
 		#if the getAllPolicies switch is used (Option 3 in the menu), the "" that is returned for $userinput
 		#will successfully match against all policies
 		if ($getAllPolicies -eq "1"){
 			$userinput = ""
-		#The elseif is to ensure the Get-UserInput gets the -additionalPolicies switch sent along with the Get-UsernInput request
-		#This is to handle the situation where a user has elected to add additional polices but opts to hit enter and then stop the 
-		#search by entering 'No'. 
-		} elseif ($additionalPolicies -eq "1") {
-			$userinput = Get-UserInput -additionalPolicies "1"
 		} else {
 			$userinput = Get-UserInput
 		}
 
-
-
-		$oldlinecount = ($newfilteredrules -split "`n").Count
+		$oldlinecount = ($newcsv -split "`n").Count
 		
+		$newcsv += Get-TargetPolicy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
 		
-		
-		$newfilteredrules += Get-TargetPolicy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
-		
-		
-		$selectedlinecount = ($newfilteredrules -split "`n").Count
-
-		
+		$selectedlinecount = ($newcsv -split "`n").Count
 
 		$newlinecount = $selectedlinecount + $oldlinecount
-
 		
 	}
-	return $newfilteredrules
+	return $newcsv
 }
 
 function Invoke-AddAdditionalPolicies(){
@@ -367,8 +364,7 @@ function Invoke-AddAdditionalPolicies(){
 	return $additionalRules
 }
 
-function Show-MainMenu
-{
+function Show-MainMenu {
      param (
            [string]$Title = ‘NSX DFW Security Policies to CSV’
      )
