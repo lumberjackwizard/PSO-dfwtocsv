@@ -1,15 +1,20 @@
 # PSO-dfwtocsv
 
-Performs a single API request to a target NSX Manager to gather elements of a selected security policy. 
 
 At script initiation, user will be prompted to enter the NSX Manager FQDN or IP address, followed by a username and password. 
 
-User will then be prompted to enter the name of the target Security policy. Upon a successful match, the policy and all of it's rules are output to a CSV file. 
+A menu will be displayed, offering 3 options:
 
-If there's no matching policy, an error message will be placed onscreen, and the user will be prompted to enter a security policy again. 
+1- Display a full list of all user-created policy names
+2- Allow user to search for specific polices and associated rules to output to a csv file
+3- Gather all polices and associated rules and output to a file
 
 Notes:
 
 1) The search function is using a -like switch; this allows for a user to grab any policy name that has a given word, like "NTP". If muliple policies match the search criteria, all are inserted in the CSV.
-2) It's possible to use an -eq switch for the search, but this would mean a given policy name would need to be entered perfectly to find a match.
-3) An entire policy name can still be entered to narrow the selections to a specific policy. The search feature is case insensitive.
+
+2) An entire policy name can still be entered to narrow the selections to a specific policy. The search feature is case insensitive.
+
+3) Each interation of option 2 or 3 will result in a csv file named policy_<timestamp>.csv. The timestamp is in yyyyMMdd_HHmmss format. 
+
+4) After a successful complettion of options 1-3, the user is returned to the main menu, where other options can be ran or the script can be exited via the 'Q' selection on the menu. 
