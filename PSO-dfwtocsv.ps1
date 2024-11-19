@@ -334,24 +334,28 @@ function Invoke-AddCsvSection(){
 			$userinput = Get-UserInput
 		}
 
-		if (-not $userinput){
+		#If the user hit enter during the Get-UserInput loop to exit searchign for a policy, 
+		#$userinput will be set to $null, which is the same as "" in PowerShell. If we are trying to gather all policies
+		#we want $userinput to be ""; the logic below ensures that if $userinput is $null, $getAllPolicies is not set to "1".
+		#In short, if we arent' getting all polices, and $userinput is $null, we want to exit this function
+		if (-not $userinput -and $getAllPolicies -ne "1"){
 			$newcsv2 = $null
 			return $newcsv2
 		}
 
 		$oldlinecount = ($newcsv -split "`n").Count
 
-		#Write-Host $oldlinecount
+		
 		
 		$newcsv2 += Get-TargetPolicy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
 		
 		$selectedlinecount = ($newcsv2 -split "`n").Count
 
-		#Write-Host $selectedlinecount
+		
 
 		$newlinecount = $selectedlinecount + $oldlinecount
 
-		#Write-Host $newlinecount
+		
 		
 	}
 	return $newcsv2
