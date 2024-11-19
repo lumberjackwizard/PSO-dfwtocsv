@@ -284,28 +284,30 @@ function Invoke-BuildCSV(){
 
 	$newcsv = "DFW Tab,POLICY NAME,RULE NAME,ID,Sources,Destinations,Services,Context Profiles,Applied To,Action,Logging,Comments `n"
 
-	if ($getAllPolicies = "1"){
+	if ($getAllPolicies -eq "1"){
 		$newcsv += Invoke-AddCsvSection -newcsv $newcsv -getAllPolicies "1"
 	} else {
 		$newcsv += Invoke-AddCsvSection -newcsv $newcsv
 	}
 
+	if ($getAllPolicies -ne "1"){
 
-	while ($additionalPolicies -ne 'Y' -and $additionalPolicies -ne 'y' -and $additionalPolicies -ne 'N' -and $additionalPolicies -ne 'n') {
+		while ($additionalPolicies -ne 'Y' -and $additionalPolicies -ne 'y' -and $additionalPolicies -ne 'N' -and $additionalPolicies -ne 'n') {
 
-		$additionalPolicies = Read-Host "Would you like to add additional Security Policies to the csv file? <Y/N>"
-	
-		if ($additionalPolicies -eq "y" -or $additionalPolicies -eq "Y"){
-			
-			$additionalRules += Invoke-AddCsvSection -newcsv $newcsv
-	
-			$additionalPolicies = ""
-			
-			
-		} elseif ($additionalPolicies -eq "n" -or $additionalPolicies -eq "N"){
-			Write-Host "`n"
-		} else {
-			Write-Host "Invalid input, please enter Y or N."
+			$additionalPolicies = Read-Host "Would you like to add additional Security Policies to the csv file? <Y/N>"
+		
+			if ($additionalPolicies -eq "y" -or $additionalPolicies -eq "Y"){
+				
+				$additionalRules += Invoke-AddCsvSection -newcsv $newcsv
+		
+				$additionalPolicies = ""
+				
+				
+			} elseif ($additionalPolicies -eq "n" -or $additionalPolicies -eq "N"){
+				Write-Host "`n"
+			} else {
+				Write-Host "Invalid input, please enter Y or N."
+			}
 		}
 	}
 
@@ -319,7 +321,7 @@ function Invoke-AddCsvSection(){
 		[string] $getAllPolicies
 	)
 
-	while (($newcsv.EndsWith("Comments `n")) -or ($oldlinecount -eq $newlinecount) ){
+	while (($oldlinecount -eq $newlinecount)){
 
 		#Prompt the user for the target Security Group
 		#if the getAllPolicies switch is used (Option 3 in the menu), the "" that is returned for $userinput
@@ -331,15 +333,21 @@ function Invoke-AddCsvSection(){
 		}
 
 		$oldlinecount = ($newcsv -split "`n").Count
+
+		#Write-Host $oldlinecount
 		
-		$newcsv += Get-TargetPolicy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
+		$newcsv2 += Get-TargetPolicy -allsecpolicies $allsecpolicies -allsecgroups $allsecgroups -allsecservices $allsecservices -allseccontextprofiles $allseccontextprofiles -userinput $userinput
 		
-		$selectedlinecount = ($newcsv -split "`n").Count
+		$selectedlinecount = ($newcsv2 -split "`n").Count
+
+		#Write-Host $selectedlinecount
 
 		$newlinecount = $selectedlinecount + $oldlinecount
+
+		#Write-Host $newlinecount
 		
 	}
-	return $newcsv
+	return $newcsv2
 }
 
 function Invoke-AddAdditionalPolicies(){
