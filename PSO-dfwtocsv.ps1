@@ -422,14 +422,16 @@ function Invoke-CreateMenu {
 # Main 
 
 
-
+#First we verify the entered NSX credentials are correct
 Invoke-CheckNSXCredentials
 
 
-# Uri will get only securitypolices, groups, context profiles under infra
-# SvcUri will get only services. Each of these are used in the Get-NSXDFw function
+# Uri is used to gather securitypolices, groups, context profiles under infra
+# SvcUri is used for gathering services only. Each of these are used in the Get-NSXDFW function
 $Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile'
 $SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service'
+
+#Now we gather all of the above data and then break it down into discreet variables for later use
 
 $allpolicies = Get-NSXDFW
 
@@ -439,7 +441,6 @@ $allsecservices = $allpolicies.AllServices
 $allseccontextprofiles = $allpolicies.AllContextProfiles
 
 # Generate Menu
-
 
 Invoke-CreateMenu
 
