@@ -37,6 +37,9 @@ function Get-UserInput(){
 			continue
 		} elseif ($tryAgain -eq "n" -or $tryAgain -eq "N"){
 			if ($additionalPolicies -eq 1) {
+				#needed a unique name that is unlikely to match a policy name
+				#this acts as a marker in case a user has selected to add additional policies 
+				#but opts during the process to choose hit 'Enter' to quit the policy name search
 				$userinput = "Pi is 3.1415"
 				return $userinput
 			} else {
@@ -52,7 +55,7 @@ function Get-UserInput(){
 }
 
 
-function Get-NSXDFW($Uri){
+function Get-NSXDFW(){
 
 
 	
@@ -106,6 +109,11 @@ function Get-TargetPolicy(){
 		[PSCustomObject]$allseccontextprofiles,
 		[string]$userinput
 	)
+	#this first if looks for the name that is automatically entered by the Get-UserInput function when they opt
+	#to give up on searching for an additional policy name. This simply returns a space to the function that has
+	#called the Get-TargetPolicy function. 
+	#Without the return of the space, an unusual phenomenon occurs where the first policy pulled (before the additional polices prompt)
+	#gets duplicated in the output file twice. 
 	if ($userinput -eq "Pi is 3.1415"){
 		return " "
 	} else {
@@ -304,8 +312,13 @@ function Invoke-BuildCSV(){
 	while (-not $newfilteredrules -or ($newfilteredrules.EndsWith("Comments `n") -or ($oldlinecount -eq $newlinecount)) ){
 
 		#Prompt the user for the target Security Group
+		#if the getAllPolicies switch is used (Option 3 in the menu), the "" that is returned for $userinput
+		#will successfully match against all policies
 		if ($getAllPolicies -eq "1"){
 			$userinput = ""
+		#The elseif is to ensure the Get-UserInput gets the -additionalPolicies switch sent along with the Get-UsernInput request
+		#This is to handle the situation where a user has elected to add additional polices but opts to hit enter and then stop the 
+		#search by entering 'No'. 
 		} elseif ($additionalPolicies -eq "1") {
 			$userinput = Get-UserInput -additionalPolicies "1"
 		} else {
@@ -414,23 +427,17 @@ function Invoke-CreateMenu {
 
 # Main 
 
-# Get-UserInput is used to prompt and gather the desired policy name
-# $newfilteredrules is populated with the returned $newfilteredrules variable from the Get-NSXDFW function. The data 
-# gathered from Get-UserInput is used to find the specific policy. 
-# If there's no match, diagnostic data is presented to the user, and the Get-UserInput and Get-NSXDFW functions are ran again.
-# Finally, the Invoke-OutputNSXCSV function outputs the data into the policy.csv file
 
-
-# Uri will get only securitypolices, groups, context profiles under infra
-# SvcUri will get only services. 
-
-$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile'
-$SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service'
 
 Invoke-CheckNSXCredentials
 
 
-$allpolicies = Get-NSXDFW($Uri)
+# Uri will get only securitypolices, groups, context profiles under infra
+# SvcUri will get only services. Each of these are used in the Get-NSXDFw function
+$Uri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=SecurityPolicy;Group;PolicyContextProfile'
+$SvcUri = 'https://'+$nsxmgr+'/policy/api/v1/infra?type_filter=Service'
+
+$allpolicies = Get-NSXDFW
 
 $allsecpolicies = $allpolicies.SecPolicies
 $allsecgroups = $allpolicies.AllGroups
