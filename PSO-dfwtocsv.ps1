@@ -1,10 +1,21 @@
 # Developed on Powershell 7.4.5 
 
 
-#Gathering NSX Manager and Credentials
-$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
-$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
+param (
+    [switch]$TestMode
+)
 
+if ($TestMode) {
+    $Config = Import-Csv "testdata.csv"
+	$nsxmgr = $Config.nsxmgr
+    $nsxuser = $Config.Username
+    $nsxpasswd = ConvertTo-SecureString -String $Config.Password -AsPlainText -Force
+	$Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxuser, $nsxpasswd
+} else {
+	#Gathering NSX Manager and Credentials
+	$nsxmgr = Read-Host "Enter NSX Manager IP or FQDN"
+	$Cred = Get-Credential -Title 'NSX Manager Credentials' -Message 'Enter NSX Username and Password'
+}
 
 function Invoke-CheckNSXCredentials(){
 	$checkUri = 'https://'+$nsxmgr+'/policy/api/v1/infra'
@@ -197,8 +208,14 @@ function Get-TargetPolicy(){
 							}
 							
 						}
+						#added logic to make a blank entry if no context profile is configured, rather than outputting the ANY 
+						#that is actually used for the context profile entry. 
 						if ($n -eq "0") {
+							if ($cxtprogroup -eq "ANY"){
+								$initruleentrycxtpro = ""
+							} else {
 							$initruleentrycxtpro += $cxtprogroup 
+							}
 						}
 					}
 
